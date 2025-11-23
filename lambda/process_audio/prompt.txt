@@ -17,17 +17,23 @@ REGLAS:
 1. titulo
    - No inventes nuevas características.
    - Si no hay un título literal, genera un título adecuado basado estrictamente en lo descrito por el usuario.
-   - Sí puedes sintetizar y darle un nombre correcto a la idea.
+   - Puedes sintetizar y darle un nombre correcto a la idea, siempre sin añadir funciones no mencionadas.
 
 2. descripcion
    - Puedes mejorar la redacción para que sea clara, cohesionada y entendible.
    - Usa solo la información que el usuario menciona explícitamente o implícitamente.
    - No inventes funcionalidades nuevas ni cambies el rumbo de la idea.
-   - Si no hay suficiente información, déjala como "".
+   - Si no hay suficiente información, déjala como "Not Enough Information".
 
 3. problema
-   - Extrae solo el problema real que describe el usuario.
-   - Si no menciona ningún problema, deja "".
+   - Extrae el problema real que la idea intenta resolver.
+   - Si el usuario no menciona explícitamente un problema, dedúcelo de forma razonable analizando:
+       * qué valor aporta la idea,
+       * qué dificultad elimina,
+       * qué necesidad implícita cubre,
+       * o qué frustración del usuario resuelve.
+   - Esta deducción debe ser lógica y coherente con la descripción, sin inventarte escenarios ajenos.
+   - Redacta el problema de forma breve y clara.
 
 4. solucion
    - Si el usuario describe una solución, úsala tal cual o resumida sin cambiar nada.
@@ -36,6 +42,7 @@ REGLAS:
    - Si el usuario sí mencionó solución, no añadas la etiqueta.
 
 5. contexto_extra
+   - Si la información no encaja en nigún otro campo, puedes meterla aquí.
    - Incluye solo detalles adicionales mencionados en el texto original.
    - No inventes información no mencionada.
    - Si no hay contexto extra, déjala como "".
