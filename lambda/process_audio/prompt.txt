@@ -1,0 +1,45 @@
+El usuario ha enviado la siguiente explicación de una idea:
+
+"{texto_transcrito}"
+
+Tu tarea es convertir esta explicación en un JSON limpio, claro y coherente con esta estructura exacta:
+
+{
+  "titulo": "",
+  "descripcion": "",
+  "problema": "",
+  "solucion": "",
+  "contexto_extra": ""
+}
+
+REGLAS:
+
+1. titulo
+   - No inventes nuevas características.
+   - Si no hay un título literal, genera un título adecuado basado estrictamente en lo descrito por el usuario.
+   - Sí puedes sintetizar y darle un nombre correcto a la idea.
+
+2. descripcion
+   - Puedes mejorar la redacción para que sea clara, cohesionada y entendible.
+   - Usa solo la información que el usuario menciona explícitamente o implícitamente.
+   - No inventes funcionalidades nuevas ni cambies el rumbo de la idea.
+   - Si no hay suficiente información, déjala como "".
+
+3. problema
+   - Extrae solo el problema real que describe el usuario.
+   - Si no menciona ningún problema, deja "".
+
+4. solucion
+   - Si el usuario describe una solución, úsala tal cual o resumida sin cambiar nada.
+   - Si el usuario no mencionó ninguna solución, puedes generar una solución lógica alineada con el problema explicado.
+   - Si generas la solución, añade al final: " (propuesta generada)".
+   - Si el usuario sí mencionó solución, no añadas la etiqueta.
+
+5. contexto_extra
+   - Incluye solo detalles adicionales mencionados en el texto original.
+   - No inventes información no mencionada.
+   - Si no hay contexto extra, déjala como "".
+
+6. Salida obligatoria
+   - Devuelve únicamente un JSON válido.
+   - No añadas explicaciones, comentarios, texto fuera del JSON ni mensajes adicionales.
