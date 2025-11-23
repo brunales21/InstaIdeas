@@ -70,7 +70,7 @@ Reglas:
         max_tokens=350
     )
 
-    contenido = response.choices[0].message["content"]
+    contenido = response.choices[0].message.content
 
     print("📦 Respuesta bruta del modelo:")
     print(contenido)
