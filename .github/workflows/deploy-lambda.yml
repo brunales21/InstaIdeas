@@ -29,6 +29,7 @@ jobs:
           zip -r9 ../function.zip .
           cd ..
           zip -g function.zip lambda_function.py
+          zip -g function.zip prompt.txt
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4

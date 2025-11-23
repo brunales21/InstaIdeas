@@ -1,5 +1,6 @@
 import boto3
 import json
+import os
 from datetime import datetime
 from openai import OpenAI
 
@@ -12,10 +13,22 @@ table = dynamodb.Table("InstaIdeas")
 
 client = OpenAI()
 
-# ---------------------------
-# Funciones auxiliares
-# ---------------------------
 
+# ---------------------------
+# Cargar prompt externo
+# ---------------------------
+def cargar_prompt():
+    """
+    Lee el archivo prompt.txt ubicado en el mismo directorio que este archivo.
+    """
+    ruta = os.path.join(os.path.dirname(__file__), "prompt.txt")
+    with open(ruta, "r", encoding="utf-8") as f:
+        return f.read()
+
+
+# ---------------------------
+# Transcripción
+# ---------------------------
 def transcribe_audio(audio_bytes):
     """Transcribe el audio usando gpt-4o-transcribe."""
     print("🧠 Enviando audio a gpt-4o-transcribe...")
@@ -31,69 +44,54 @@ def transcribe_audio(audio_bytes):
     return texto
 
 
+# ---------------------------
+# Generar JSON estructurado
+# ---------------------------
 def generar_json_idea(texto_transcrito):
     """
-    Transforma la explicación de la idea en un JSON estructurado.
-    Puede proponer soluciones si no están dichas, indicando que son propuestas.
+    Transforma la explicación de la idea en un JSON estructurado usando prompt.txt.
     """
-    prompt = f"""
-El usuario ha enviado la siguiente explicación de una idea:
 
-"{texto_transcrito}"
+    # 1. cargar plantilla del prompt
+    prompt_template = cargar_prompt()
 
-Tu tarea es:
-- Interpretar la idea.
-- Extraer información de forma clara.
-- Completar los campos faltantes solo si es lógico, basándose en lo dicho.
-- Si se inventa una parte (por ejemplo, la solución), indícalo con: "(propuesta generada)".
-- Si una parte no puede inferirse, déjala como cadena vacía "".
+    # 2. reemplazar placeholder
+    prompt = prompt_template.replace("{texto_transcrito}", texto_transcrito)
 
-Devuelve SOLO un JSON válido con esta estructura EXACTA:
-
-{{
-  "titulo": "",
-  "descripcion": "",
-  "problema": "",
-  "solucion": "",
-  "contexto_extra": ""
-}}
-
-Reglas:
-- No añadas texto fuera del JSON.
-- No expliques nada.
-- No incluyas comentarios.
-"""
-
+    # 3. llamar al modelo
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}],
         max_tokens=350
     )
 
-    contenido = response.choices[0].message.content
+    contenido = response.choices[0].message.content.strip()
 
     print("📦 Respuesta bruta del modelo:")
     print(contenido)
 
+    # 4. intentar parsear JSON
     try:
         json_resultado = json.loads(contenido)
         print("📇 JSON generado correctamente:")
         print(json.dumps(json_resultado, indent=2))
         return json_resultado
+
     except Exception as e:
         print("⚠️ Error al parsear JSON:", e)
         return {"error": "JSON inválido", "raw": contenido}
 
 
+# ---------------------------
+# Guardar en DynamoDB
+# ---------------------------
 def guardar_idea_dynamodb(user_id, audio_key, transcripcion, idea_json):
-    """Guarda la información en DynamoDB."""
+    """Guarda la información en DynamoDB usando las claves userId e ideaId."""
     timestamp = datetime.utcnow().isoformat()
-    pk = f"user#{user_id}"
-    sk = f"idea#{timestamp}"
 
     item = {
-        "pk": pk,
-        "sk": sk,
+        "userId": user_id,
+        "ideaId": f"idea#{timestamp}",
         "audio_key": audio_key,
         "transcripcion": transcripcion,
         "idea_json": idea_json,
@@ -122,7 +120,7 @@ def lambda_handler(event, context):
 
     print(f"📁 Audio subido: bucket={bucket}, key={key}")
 
-    # 2. Descargar audio desde S3
+    # 2. Descargar el audio desde S3
     audio_obj = s3.get_object(Bucket=bucket, Key=key)
     audio_bytes = audio_obj["Body"].read()
 
@@ -134,7 +132,7 @@ def lambda_handler(event, context):
     # 4. Generar JSON estructurado
     idea_json = generar_json_idea(transcripcion)
 
-    # 5. GUARDAR EN DYNAMODB (ID de usuario temporal)
+    # 5. Guardar en DynamoDB (usuario temporal)
     saved_item = guardar_idea_dynamodb(
         user_id="demo-user",
         audio_key=key,
