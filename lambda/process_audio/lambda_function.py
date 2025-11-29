@@ -148,3 +148,4 @@ def lambda_handler(event, context):
             "idea_guardada": saved_item
         })
     }
+
