@@ -13,17 +13,39 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # ---------------------------------------------------
+      # Detectar qué carpetas han cambiado
+      # ---------------------------------------------------
+      - name: Detect changed lambda folders
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            process_audio:
+              - 'lambda/process_audio/**'
+            upload_url:
+              - 'lambda/get_upload_url/**'
+
+      # ---------------------------------------------------
+      # Set up Python
+      # ---------------------------------------------------
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.12"
 
-      - name: Install dependencies (Linux compatible)
+      # ---------------------------------------------------
+      # Build + Deploy process_audio Lambda
+      # ---------------------------------------------------
+
+      - name: Install dependencies (process_audio)
+        if: steps.changes.outputs.process_audio == 'true'
         run: |
           cd lambda/process_audio
           pip install -r requirements.txt -t ./package
 
-      - name: Build ZIP package
+      - name: Build ZIP package (process_audio)
+        if: steps.changes.outputs.process_audio == 'true'
         run: |
           cd lambda/process_audio/package
           zip -r9 ../function.zip .
@@ -31,15 +53,39 @@ jobs:
           zip -g function.zip lambda_function.py
           zip -g function.zip prompt.txt
 
+      # ---------------------------------------------------
+      # AWS Credentials (solo una vez)
+      # ---------------------------------------------------
       - name: Configure AWS credentials
+        if: steps.changes.outputs.process_audio == 'true' || steps.changes.outputs.upload_url == 'true'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Deploy Lambda
+      - name: Deploy ProcessAudio Lambda
+        if: steps.changes.outputs.process_audio == 'true'
         run: |
           aws lambda update-function-code \
             --function-name ProcessIdeaAudioLambda-dev \
             --zip-file fileb://lambda/process_audio/function.zip
+
+      # ---------------------------------------------------
+      # Build + Deploy get_upload_url Lambda
+      # ---------------------------------------------------
+
+      - name: Build ZIP package (get_upload_url)
+        if: steps.changes.outputs.upload_url == 'true'
+        run: |
+          cd lambda/get_upload_url/package
+          zip -r9 ../function.zip .
+          cd ..
+          zip -g function.zip lambda_function.py
+
+      - name: Deploy GetUploadURL Lambda
+        if: steps.changes.outputs.upload_url == 'true'
+        run: |
+          aws lambda update-function-code \
+            --function-name GetUploadURLLambda-dev \
+            --zip-file fileb://lambda/get_upload_url/function.zip
