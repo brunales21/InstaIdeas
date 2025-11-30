@@ -3,7 +3,11 @@ import os
 import boto3
 from datetime import datetime
 
-s3 = boto3.client("s3")
+s3 = boto3.client(
+    "s3",
+    region_name="eu-south-2",
+    endpoint_url="https://s3.eu-south-2.amazonaws.com"
+)
 
 # ---------------------------
 # Helpers
