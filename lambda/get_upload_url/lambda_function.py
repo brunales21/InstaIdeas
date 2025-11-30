@@ -5,9 +5,12 @@ from datetime import datetime
 
 s3 = boto3.client(
     "s3",
-    region_name="eu-south-2",
-    endpoint_url="https://s3.eu-south-2.amazonaws.com"
+    config=boto3.session.Config(
+        signature_version="s3v4",
+        s3={"addressing_style": "virtual"}
+    )
 )
+
 
 # ---------------------------
 # Helpers
