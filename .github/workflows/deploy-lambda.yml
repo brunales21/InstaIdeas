@@ -13,9 +13,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # -----------------------------
-      # Detectar qué Lambdas cambiaron
-      # -----------------------------
+      # -------------------------------------------
+      # Detectar qué lambdas cambiaron
+      # -------------------------------------------
       - name: Detect changed lambdas
         id: changes
         uses: dorny/paths-filter@v2
@@ -25,15 +25,20 @@ jobs:
               - 'lambda/process_audio/**'
             upload_url:
               - 'lambda/get_upload_url/**'
+            get_idea:
+              - 'lambda/get_idea/**'
 
+      # -------------------------------------------
+      # Python
+      # -------------------------------------------
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.12"
 
-      # =============================
+      # -------------------------------------------
       # ProcessAudioLambda
-      # =============================
+      # -------------------------------------------
       - name: Install dependencies (process_audio)
         if: steps.changes.outputs.process_audio == 'true'
         run: |
@@ -49,18 +54,27 @@ jobs:
           zip -g function.zip lambda_function.py
           zip -g function.zip prompt.txt
 
-      # =============================
-      # GetUploadURL Lambda
-      # =============================
+      # -------------------------------------------
+      # GetUploadUrlLambda
+      # -------------------------------------------
       - name: Build ZIP (get_upload_url)
         if: steps.changes.outputs.upload_url == 'true'
         run: |
           cd lambda/get_upload_url
           zip -r function.zip lambda_function.py
 
-      # -----------------------------
+      # -------------------------------------------
+      # GetIdeaLambda
+      # -------------------------------------------
+      - name: Build ZIP (get_idea)
+        if: steps.changes.outputs.get_idea == 'true'
+        run: |
+          cd lambda/get_idea
+          zip -r function.zip lambda_function.py
+
+      # -------------------------------------------
       # AWS Creds
-      # -----------------------------
+      # -------------------------------------------
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -68,22 +82,26 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # -----------------------------
-      # Deploy process_audio
-      # -----------------------------
-      - name: Deploy process_audio lambda
+      # -------------------------------------------
+      # Deploy Lambdas
+      # -------------------------------------------
+      - name: Deploy ProcessAudioLambda
         if: steps.changes.outputs.process_audio == 'true'
         run: |
           aws lambda update-function-code \
             --function-name ProcessIdeaAudioLambda-dev \
             --zip-file fileb://lambda/process_audio/function.zip
 
-      # -----------------------------
-      # Deploy get_upload_url
-      # -----------------------------
-      - name: Deploy get_upload_url lambda
+      - name: Deploy GetUploadUrlLambda
         if: steps.changes.outputs.upload_url == 'true'
         run: |
           aws lambda update-function-code \
             --function-name GetUploadUrlLambda-dev \
             --zip-file fileb://lambda/get_upload_url/function.zip
+
+      - name: Deploy GetIdeaLambda
+        if: steps.changes.outputs.get_idea == 'true'
+        run: |
+          aws lambda update-function-code \
+            --function-name GetIdeaLambda-dev \
+            --zip-file fileb://lambda/get_idea/function.zip

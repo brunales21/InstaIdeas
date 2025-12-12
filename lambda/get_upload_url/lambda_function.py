@@ -1,7 +1,7 @@
 import json
 import os
 import boto3
-from datetime import datetime
+from datetime import datetime, timezone
 
 s3 = boto3.client(
     "s3",
@@ -20,10 +20,9 @@ def get_bucket_name():
     """Obtiene el nombre del bucket desde variables de entorno."""
     return os.environ["UPLOAD_BUCKET"]
 
-
 def generate_timestamp():
-    """Genera timestamp ISO simplificado, válido para nombres de archivo."""
-    return datetime.utcnow().isoformat().replace(":", "-").split(".")[0]
+    ts = datetime.now(timezone.utc).replace(tzinfo=None)
+    return ts.isoformat().replace(":", "-").split(".")[0]
 
 
 def build_audio_key(user_id: str, filename: str) -> str:
