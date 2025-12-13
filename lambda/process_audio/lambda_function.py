@@ -100,6 +100,8 @@ def save_idea_to_dynamodb(user_id: str, audio_key: str, transcript: str, idea_js
 # ---------------------------
 
 def lambda_handler(event, context):
+    print("EVENT >>>", json.dumps(event))
+
     """Punto de entrada principal, muy limpio."""
     try:
         body = json.loads(event.get("body") or "{}")
