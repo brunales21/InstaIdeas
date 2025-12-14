@@ -1,6 +1,7 @@
 import json
 import os
 import boto3
+import base64
 from datetime import datetime
 from openai import OpenAI
 
@@ -26,6 +27,22 @@ def generate_idea_id():
     return f"idea#{datetime.utcnow().isoformat()}"
 
 
+def parse_event_body(event: dict) -> dict:
+    """
+    Parsea correctamente el body del evento de API Gateway,
+    manejando Base64 si es necesario.
+    """
+    raw_body = event.get("body")
+
+    if not raw_body:
+        return {}
+
+    if event.get("isBase64Encoded"):
+        raw_body = base64.b64decode(raw_body).decode("utf-8")
+
+    return json.loads(raw_body)
+
+
 # ---------------------------
 # Lógica de negocio
 # ---------------------------
@@ -45,6 +62,13 @@ def transcribe_audio(audio_bytes: bytes) -> str:
     return response.text.strip()
 
 
+def load_prompt_template() -> str:
+    """Carga el contenido de prompt.txt ubicado en el mismo directorio."""
+    path = os.path.join(os.path.dirname(__file__), "prompt.txt")
+    with open(path, "r", encoding="utf-8") as f:
+        return f.read()
+
+
 def generate_structured_json(transcript: str) -> dict:
     """
     Genera un JSON estructurado usando prompt.txt.
@@ -61,18 +85,10 @@ def generate_structured_json(transcript: str) -> dict:
 
     raw = completion.choices[0].message.content.strip()
 
-    # Intentar parsear como JSON
     try:
         return json.loads(raw)
     except Exception:
         return {"error": "JSON inválido", "raw": raw}
-
-
-def load_prompt_template() -> str:
-    """Carga el contenido de prompt.txt ubicado en el mismo directorio."""
-    path = os.path.join(os.path.dirname(__file__), "prompt.txt")
-    with open(path, "r", encoding="utf-8") as f:
-        return f.read()
 
 
 def save_idea_to_dynamodb(user_id: str, audio_key: str, transcript: str, idea_json: dict) -> dict:
@@ -102,9 +118,8 @@ def save_idea_to_dynamodb(user_id: str, audio_key: str, transcript: str, idea_js
 def lambda_handler(event, context):
     print("EVENT >>>", json.dumps(event))
 
-    """Punto de entrada principal, muy limpio."""
     try:
-        body = json.loads(event.get("body") or "{}")
+        body = parse_event_body(event)
 
         audio_key = body.get("audio_key")
         user_id = body.get("userId", "demo-user")
