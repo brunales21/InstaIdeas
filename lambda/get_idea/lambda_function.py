@@ -40,9 +40,12 @@ def lambda_handler(event, context):
                 "body": json.dumps({"error": "Idea no encontrada"})
             }
 
+        # ✅ DEVOLVER SOLO idea_json
         return {
             "statusCode": 200,
-            "body": json.dumps(item)
+            "body": json.dumps({
+                "idea_json": item.get("idea_json")
+            })
         }
 
     except Exception as e:
