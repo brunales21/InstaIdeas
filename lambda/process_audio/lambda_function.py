@@ -2,7 +2,7 @@ import json
 import os
 import boto3
 import base64
-from datetime import datetime
+from datetime import datetime, timezone
 from openai import OpenAI
 
 # ---------------------------
@@ -23,24 +23,24 @@ def get_env_bucket():
 
 
 def generate_idea_id():
-    """Genera un ID único basado en timestamp."""
-    return f"idea#{datetime.utcnow().isoformat()}"
+    """Genera un ID único usando UTC timezone-aware."""
+    now = datetime.now(timezone.utc)
+    return f"idea#{now.isoformat()}"
 
 
-def parse_event_body(event: dict) -> dict:
+def parse_event_body(event) -> dict:
     """
-    Parsea correctamente el body del evento de API Gateway,
-    manejando Base64 si es necesario.
+    Maneja body normal y body base64 (API Gateway v2).
     """
-    raw_body = event.get("body")
-
-    if not raw_body:
+    body = event.get("body")
+    if not body:
         return {}
 
     if event.get("isBase64Encoded"):
-        raw_body = base64.b64decode(raw_body).decode("utf-8")
+        decoded = base64.b64decode(body).decode("utf-8")
+        return json.loads(decoded)
 
-    return json.loads(raw_body)
+    return json.loads(body)
 
 
 # ---------------------------
@@ -63,7 +63,7 @@ def transcribe_audio(audio_bytes: bytes) -> str:
 
 
 def load_prompt_template() -> str:
-    """Carga el contenido de prompt.txt ubicado en el mismo directorio."""
+    """Carga el contenido de prompt.txt."""
     path = os.path.join(os.path.dirname(__file__), "prompt.txt")
     with open(path, "r", encoding="utf-8") as f:
         return f.read()
@@ -72,7 +72,6 @@ def load_prompt_template() -> str:
 def generate_structured_json(transcript: str) -> dict:
     """
     Genera un JSON estructurado usando prompt.txt.
-    El modelo debe devolver únicamente JSON válido.
     """
     prompt_template = load_prompt_template()
     prompt = prompt_template.replace("{texto_transcrito}", transcript)
@@ -91,20 +90,24 @@ def generate_structured_json(transcript: str) -> dict:
         return {"error": "JSON inválido", "raw": raw}
 
 
-def save_idea_to_dynamodb(user_id: str, audio_key: str, transcript: str, idea_json: dict) -> dict:
+def save_idea_to_dynamodb(
+    user_id: str,
+    audio_key: str,
+    transcript: str,
+    idea_json: dict
+) -> dict:
     """
-    Guarda todo en DynamoDB con claves userId + ideaId.
+    Guarda la idea en DynamoDB.
     """
-    idea_id = generate_idea_id()
-    timestamp = datetime.utcnow().isoformat()
+    now = datetime.now(timezone.utc)
 
     item = {
         "userId": user_id,
-        "ideaId": idea_id,
+        "ideaId": f"idea#{now.isoformat()}",
         "audio_key": audio_key,
         "transcripcion": transcript,
         "idea_json": idea_json,
-        "created_at": timestamp
+        "created_at": now.isoformat()
     }
 
     table.put_item(Item=item)
@@ -149,7 +152,6 @@ def lambda_handler(event, context):
             idea_json=idea_json
         )
 
-        # 5. Responder
         return {
             "statusCode": 200,
             "body": json.dumps({
