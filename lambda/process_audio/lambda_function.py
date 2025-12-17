@@ -23,9 +23,10 @@ def get_env_bucket():
 
 
 def generate_idea_id():
-    """Genera un ID único usando UTC timezone-aware."""
     now = datetime.now(timezone.utc)
-    return f"idea#{now.isoformat()}"
+    ts = now.strftime("%Y%m%dT%H%M%S%fZ")
+    return f"idea-{ts}"
+
 
 
 def parse_event_body(event) -> dict:
