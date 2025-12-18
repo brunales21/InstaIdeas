@@ -11,14 +11,13 @@ s3 = boto3.client(
     )
 )
 
-
 # ---------------------------
 # Helpers
 # ---------------------------
 
 def get_bucket_name():
-    """Obtiene el nombre del bucket desde variables de entorno."""
     return os.environ["UPLOAD_BUCKET"]
+
 
 def generate_timestamp():
     ts = datetime.now(timezone.utc).replace(tzinfo=None)
@@ -26,7 +25,6 @@ def generate_timestamp():
 
 
 def build_audio_key(user_id: str, filename: str) -> str:
-    """Construye la ruta final dentro del bucket."""
     ts = generate_timestamp()
     return f"audio/{user_id}/{ts}-{filename}"
 
@@ -69,10 +67,6 @@ def handle_request(event):
 # ---------------------------
 
 def lambda_handler(event, context):
-    """
-    Punto de entrada de AWS Lambda.
-    Mantiene solo la llamada al manejador real.
-    """
     try:
         return handle_request(event)
     except Exception as e:
@@ -81,4 +75,3 @@ def lambda_handler(event, context):
             "statusCode": 500,
             "body": json.dumps({"error": str(e)})
         }
-

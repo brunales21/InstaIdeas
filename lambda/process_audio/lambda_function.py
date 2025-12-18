@@ -2,6 +2,8 @@ import json
 import os
 import boto3
 import base64
+import subprocess
+import tempfile
 from datetime import datetime, timezone
 from openai import OpenAI
 
@@ -28,7 +30,6 @@ def generate_idea_id():
     return f"idea-{ts}"
 
 
-
 def parse_event_body(event) -> dict:
     """
     Maneja body normal y body base64 (API Gateway v2).
@@ -44,36 +45,59 @@ def parse_event_body(event) -> dict:
     return json.loads(body)
 
 
+def get_extension_from_key(key: str) -> str:
+    return key.split(".")[-1].lower()
+
+
 # ---------------------------
 # Lógica de negocio
 # ---------------------------
 
 def download_audio_from_s3(bucket: str, key: str) -> bytes:
-    """Descarga el audio desde S3 y devuelve los bytes."""
     audio_obj = s3.get_object(Bucket=bucket, Key=key)
     return audio_obj["Body"].read()
 
 
-def transcribe_audio(audio_bytes: bytes) -> str:
+def convert_to_wav(audio_bytes: bytes, ext: str) -> bytes:
+    """
+    Convierte cualquier formato soportado (webm, m4a, mp4, ogg) a WAV
+    """
+    with tempfile.NamedTemporaryFile(suffix=f".{ext}") as src, \
+         tempfile.NamedTemporaryFile(suffix=".wav") as dst:
+
+        src.write(audio_bytes)
+        src.flush()
+
+        subprocess.run(
+            [
+                "/bin/ffmpeg",
+                "-y",
+                "-i", src.name,
+                "-ac", "1",
+                "-ar", "16000",
+                dst.name
+            ],
+            check=True
+        )
+
+        return dst.read()
+
+
+def transcribe_audio(wav_bytes: bytes) -> str:
     response = client.audio.transcriptions.create(
         model="gpt-4o-transcribe",
-        file=("audio", audio_bytes)
+        file=("audio.wav", wav_bytes)
     )
     return response.text.strip()
 
 
-
 def load_prompt_template() -> str:
-    """Carga el contenido de prompt.txt."""
     path = os.path.join(os.path.dirname(__file__), "prompt.txt")
     with open(path, "r", encoding="utf-8") as f:
         return f.read()
 
 
 def generate_structured_json(transcript: str) -> dict:
-    """
-    Genera un JSON estructurado usando prompt.txt.
-    """
     prompt_template = load_prompt_template()
     prompt = prompt_template.replace("{texto_transcrito}", transcript)
 
@@ -97,14 +121,11 @@ def save_idea_to_dynamodb(
     transcript: str,
     idea_json: dict
 ) -> dict:
-    """
-    Guarda la idea en DynamoDB.
-    """
     now = datetime.now(timezone.utc)
 
     item = {
         "userId": user_id,
-        "ideaId": f"idea#{now.isoformat()}",
+        "ideaId": generate_idea_id(),
         "audio_key": audio_key,
         "transcripcion": transcript,
         "idea_json": idea_json,
@@ -137,15 +158,19 @@ def lambda_handler(event, context):
         bucket = get_env_bucket()
 
         # 1. Descargar audio
-        audio_bytes = download_audio_from_s3(bucket, audio_key)
+        raw_audio = download_audio_from_s3(bucket, audio_key)
 
-        # 2. Transcribir
-        transcript = transcribe_audio(audio_bytes)
+        # 2. Convertir a WAV
+        ext = get_extension_from_key(audio_key)
+        wav_audio = convert_to_wav(raw_audio, ext)
 
-        # 3. Generar JSON estructurado
+        # 3. Transcribir
+        transcript = transcribe_audio(wav_audio)
+
+        # 4. Generar JSON estructurado
         idea_json = generate_structured_json(transcript)
 
-        # 4. Guardar en DynamoDB
+        # 5. Guardar en DynamoDB
         saved_item = save_idea_to_dynamodb(
             user_id=user_id,
             audio_key=audio_key,
