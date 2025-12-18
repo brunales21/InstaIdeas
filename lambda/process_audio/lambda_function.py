@@ -2,8 +2,6 @@ import json
 import os
 import boto3
 import base64
-import subprocess
-import tempfile
 from datetime import datetime, timezone
 from openai import OpenAI
 
@@ -17,7 +15,7 @@ table = dynamodb.Table(os.environ["IDEAS_TABLE"])
 client = OpenAI()
 
 # ---------------------------
-# Helpers generales
+# Helpers
 # ---------------------------
 
 def get_env_bucket():
@@ -31,9 +29,6 @@ def generate_idea_id():
 
 
 def parse_event_body(event) -> dict:
-    """
-    Maneja body normal y body base64 (API Gateway v2).
-    """
     body = event.get("body")
     if not body:
         return {}
@@ -45,10 +40,6 @@ def parse_event_body(event) -> dict:
     return json.loads(body)
 
 
-def get_extension_from_key(key: str) -> str:
-    return key.split(".")[-1].lower()
-
-
 # ---------------------------
 # Lógica de negocio
 # ---------------------------
@@ -58,35 +49,10 @@ def download_audio_from_s3(bucket: str, key: str) -> bytes:
     return audio_obj["Body"].read()
 
 
-def convert_to_wav(audio_bytes: bytes, ext: str) -> bytes:
-    """
-    Convierte cualquier formato soportado (webm, m4a, mp4, ogg) a WAV
-    """
-    with tempfile.NamedTemporaryFile(suffix=f".{ext}") as src, \
-         tempfile.NamedTemporaryFile(suffix=".wav") as dst:
-
-        src.write(audio_bytes)
-        src.flush()
-
-        subprocess.run(
-            [
-                "/bin/ffmpeg",
-                "-y",
-                "-i", src.name,
-                "-ac", "1",
-                "-ar", "16000",
-                dst.name
-            ],
-            check=True
-        )
-
-        return dst.read()
-
-
-def transcribe_audio(wav_bytes: bytes) -> str:
+def transcribe_audio(audio_bytes: bytes) -> str:
     response = client.audio.transcriptions.create(
         model="gpt-4o-transcribe",
-        file=("audio.wav", wav_bytes)
+        file=("audio.m4a", audio_bytes)
     )
     return response.text.strip()
 
@@ -115,12 +81,7 @@ def generate_structured_json(transcript: str) -> dict:
         return {"error": "JSON inválido", "raw": raw}
 
 
-def save_idea_to_dynamodb(
-    user_id: str,
-    audio_key: str,
-    transcript: str,
-    idea_json: dict
-) -> dict:
+def save_idea_to_dynamodb(user_id, audio_key, transcript, idea_json):
     now = datetime.now(timezone.utc)
 
     item = {
@@ -157,20 +118,16 @@ def lambda_handler(event, context):
 
         bucket = get_env_bucket()
 
-        # 1. Descargar audio
-        raw_audio = download_audio_from_s3(bucket, audio_key)
+        # 1. Descargar audio m4a
+        audio_bytes = download_audio_from_s3(bucket, audio_key)
 
-        # 2. Convertir a WAV
-        ext = get_extension_from_key(audio_key)
-        wav_audio = convert_to_wav(raw_audio, ext)
+        # 2. Transcribir directamente
+        transcript = transcribe_audio(audio_bytes)
 
-        # 3. Transcribir
-        transcript = transcribe_audio(wav_audio)
-
-        # 4. Generar JSON estructurado
+        # 3. Generar JSON estructurado
         idea_json = generate_structured_json(transcript)
 
-        # 5. Guardar en DynamoDB
+        # 4. Guardar en DynamoDB
         saved_item = save_idea_to_dynamodb(
             user_id=user_id,
             audio_key=audio_key,
