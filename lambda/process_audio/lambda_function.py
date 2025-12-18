@@ -55,12 +55,12 @@ def download_audio_from_s3(bucket: str, key: str) -> bytes:
 
 
 def transcribe_audio(audio_bytes: bytes) -> str:
-    """Transcribe audio usando OpenAI gpt-4o-transcribe."""
     response = client.audio.transcriptions.create(
         model="gpt-4o-transcribe",
-        file=("audio.m4a", audio_bytes)
+        file=("audio", audio_bytes)
     )
     return response.text.strip()
+
 
 
 def load_prompt_template() -> str:

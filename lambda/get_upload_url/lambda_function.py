@@ -31,39 +31,29 @@ def build_audio_key(user_id: str, filename: str) -> str:
     return f"audio/{user_id}/{ts}-{filename}"
 
 
-def generate_presigned_upload_url(bucket: str, key: str) -> str:
-    """
-    Genera una presigned URL para subir un archivo directamente a S3.
-    Expira en 5 minutos.
-    """
+def generate_presigned_upload_url(bucket: str, key: str, content_type: str) -> str:
     return s3.generate_presigned_url(
         ClientMethod="put_object",
         Params={
             "Bucket": bucket,
             "Key": key,
-            "ContentType": "audio/m4a",
+            "ContentType": content_type,
         },
         ExpiresIn=300
     )
 
 
 def handle_request(event):
-    """
-    Lógica principal de la Lambda:
-    - Valida entrada
-    - Construye filename final
-    - Genera presigned URL
-    - Devuelve respuesta JSON
-    """
     body = json.loads(event.get("body") or "{}")
 
-    filename = body.get("filename", "audio.m4a")
+    filename = body.get("filename", "audio.webm")
     user_id = body.get("userId", "demo-user")
+    content_type = body.get("contentType", "application/octet-stream")
 
     bucket = get_bucket_name()
     key = build_audio_key(user_id, filename)
 
-    presigned_url = generate_presigned_upload_url(bucket, key)
+    presigned_url = generate_presigned_upload_url(bucket, key, content_type)
 
     return {
         "statusCode": 200,
