@@ -27,6 +27,8 @@ jobs:
               - 'lambda/get_upload_url/**'
             get_idea:
               - 'lambda/get_idea/**'
+            feedback:
+              - 'lambda/save_feedback/**'
 
       # -------------------------------------------
       # Python
@@ -73,6 +75,15 @@ jobs:
           zip -r function.zip lambda_function.py
 
       # -------------------------------------------
+      # FeedbackLambda (NUEVA)
+      # -------------------------------------------
+      - name: Build ZIP (save_feedback)
+        if: steps.changes.outputs.save_feedback == 'true'
+        run: |
+          cd lambda/feedback
+          zip -r function.zip lambda_function.py
+
+      # -------------------------------------------
       # AWS Creds
       # -------------------------------------------
       - name: Configure AWS credentials
@@ -105,3 +116,10 @@ jobs:
           aws lambda update-function-code \
             --function-name GetIdeaLambda-dev \
             --zip-file fileb://lambda/get_idea/function.zip
+
+      - name: Deploy SaveFeedbackLambda
+        if: steps.changes.outputs.save_feedback == 'true'
+        run: |
+          aws lambda update-function-code \
+            --function-name SaveFeedbackLambda-dev \
+            --zip-file fileb://lambda/save_feedback/function.zip
