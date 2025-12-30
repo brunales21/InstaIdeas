@@ -21,7 +21,6 @@ def lambda_handler(event, context):
             "body": json.dumps({"error": "Missing required fields"})
         }
 
-    # 🔥 UPDATE, no PUT (la idea ya existe)
     table.update_item(
         Key={
             "userId": user_id,

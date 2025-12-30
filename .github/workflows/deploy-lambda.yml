@@ -80,7 +80,7 @@ jobs:
       - name: Build ZIP (save_feedback)
         if: steps.changes.outputs.save_feedback == 'true'
         run: |
-          cd lambda/feedback
+          cd lambda/save_feedback
           zip -r function.zip lambda_function.py
 
       # -------------------------------------------
