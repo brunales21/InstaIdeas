@@ -28,7 +28,7 @@ jobs:
             get_idea:
               - 'lambda/get_idea/**'
             feedback:
-              - 'lambda/save_feedback/**'
+              - 'lambda/feedback/**'
 
       # -------------------------------------------
       # Python
@@ -77,10 +77,10 @@ jobs:
       # -------------------------------------------
       # FeedbackLambda (NUEVA)
       # -------------------------------------------
-      - name: Build ZIP (save_feedback)
-        if: steps.changes.outputs.save_feedback == 'true'
+      - name: Build ZIP (feedback)
+        if: steps.changes.outputs.feedback == 'true'
         run: |
-          cd lambda/save_feedback
+          cd lambda/feedback
           zip -r function.zip lambda_function.py
 
       # -------------------------------------------
@@ -118,8 +118,8 @@ jobs:
             --zip-file fileb://lambda/get_idea/function.zip
 
       - name: Deploy SaveFeedbackLambda
-        if: steps.changes.outputs.save_feedback == 'true'
+        if: steps.changes.outputs.feedback == 'true'
         run: |
           aws lambda update-function-code \
             --function-name SaveFeedbackLambda-dev \
-            --zip-file fileb://lambda/save_feedback/function.zip
+            --zip-file fileb://lambda/feedback/function.zip
