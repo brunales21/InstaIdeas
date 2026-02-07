@@ -1,7 +1,9 @@
 const API_BASE = "https://antbhfqvcf.execute-api.eu-south-2.amazonaws.com/dev";
 
-const dropzone = document.getElementById("dropzone");
-const fileInput = document.getElementById("fileInput");
+const startRecordingBtn = document.getElementById("startRecordingBtn");
+const stopRecordingBtn = document.getElementById("stopRecordingBtn");
+const recorderStatus = document.getElementById("recorderStatus");
+const recordedAudio = document.getElementById("recordedAudio");
 const sendBtn = document.getElementById("sendBtn");
 const output = document.getElementById("output");
 
@@ -9,44 +11,80 @@ const statusOverlay = document.getElementById("statusOverlay");
 const statusText = document.getElementById("statusText");
 
 let selectedFile = null;
+let mediaRecorder = null;
+let recordedChunks = [];
+let activeStream = null;
 window.currentIdeaId = null; // ✅ GLOBAL Y CORRECTO
 
 const MAX_FEEDBACK_CHARS = 280;
 
 /* -----------------------------
-   Drag & Drop
+   Recording
 ------------------------------ */
 
-dropzone.addEventListener("dragover", e => {
-  e.preventDefault();
-  dropzone.classList.add("dragover");
-});
+function updateRecorderStatus(message) {
+  recorderStatus.textContent = message;
+}
 
-dropzone.addEventListener("dragleave", () => {
-  dropzone.classList.remove("dragover");
-});
+function getSupportedMimeType() {
+  const candidates = ["audio/mp4", "audio/webm;codecs=opus", "audio/webm"];
+  return candidates.find(type => MediaRecorder.isTypeSupported(type));
+}
 
-dropzone.addEventListener("drop", e => {
-  e.preventDefault();
-  dropzone.classList.remove("dragover");
-  handleFile(e.dataTransfer.files[0]);
-});
-
-fileInput.addEventListener("change", e => {
-  handleFile(e.target.files[0]);
-});
-
-function handleFile(file) {
-  if (!file) return;
-
-  if (!file.name.toLowerCase().endsWith(".m4a")) {
-    alert("Only .m4a files are supported");
+async function startRecording() {
+  const mimeType = getSupportedMimeType();
+  if (!mimeType) {
+    alert("Your browser does not support audio recording.");
     return;
   }
 
-  selectedFile = file;
-  sendBtn.disabled = false;
+  try {
+    activeStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    recordedChunks = [];
+
+    mediaRecorder = new MediaRecorder(activeStream, { mimeType });
+    mediaRecorder.ondataavailable = event => {
+      if (event.data && event.data.size > 0) {
+        recordedChunks.push(event.data);
+      }
+    };
+
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(recordedChunks, { type: mimeType });
+      const extension = mimeType.includes("mp4") ? "m4a" : "webm";
+      selectedFile = new File([blob], `recording.${extension}`, { type: mimeType });
+      recordedAudio.src = URL.createObjectURL(blob);
+      recordedAudio.classList.remove("hidden");
+      sendBtn.disabled = false;
+      updateRecorderStatus("Recording ready to send.");
+    };
+
+    mediaRecorder.start();
+    updateRecorderStatus("Recording...");
+    startRecordingBtn.disabled = true;
+    stopRecordingBtn.disabled = false;
+  } catch (error) {
+    console.error(error);
+    updateRecorderStatus("Microphone access denied.");
+  }
 }
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== "inactive") {
+    mediaRecorder.stop();
+  }
+
+  if (activeStream) {
+    activeStream.getTracks().forEach(track => track.stop());
+    activeStream = null;
+  }
+
+  startRecordingBtn.disabled = false;
+  stopRecordingBtn.disabled = true;
+}
+
+startRecordingBtn.addEventListener("click", startRecording);
+stopRecordingBtn.addEventListener("click", stopRecording);
 
 /* -----------------------------
    Send flow
@@ -67,7 +105,8 @@ sendBtn.onclick = async () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         userId,
-        filename: selectedFile.name
+        filename: selectedFile.name,
+        contentType: selectedFile.type || "audio/webm"
       })
     });
 
@@ -75,7 +114,7 @@ sendBtn.onclick = async () => {
 
     await fetch(upload_url, {
       method: "PUT",
-      headers: { "Content-Type": "audio/m4a" },
+      headers: { "Content-Type": selectedFile.type || "audio/webm" },
       body: selectedFile
     });
 

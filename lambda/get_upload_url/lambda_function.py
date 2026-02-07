@@ -24,19 +24,21 @@ def generate_timestamp():
     return ts.isoformat().replace(":", "-").split(".")[0]
 
 
-def build_audio_key(user_id: str) -> str:
+def build_audio_key(user_id: str, extension: str) -> str:
     ts = generate_timestamp()
-    return f"audio/{user_id}/{ts}-idea.m4a"
+    return f"audio/{user_id}/{ts}-idea.{extension}"
 
 
-def generate_presigned_upload_url(bucket, key):
+def generate_presigned_upload_url(bucket, key, content_type=None):
+    params = {
+        "Bucket": bucket,
+        "Key": key
+    }
+    if content_type:
+        params["ContentType"] = content_type
     return s3.generate_presigned_url(
         ClientMethod="put_object",
-        Params={
-            "Bucket": bucket,
-            "Key": key,
-            "ContentType": "audio/m4a",
-        },
+        Params=params,
         ExpiresIn=300
     )
 
@@ -50,11 +52,14 @@ def lambda_handler(event, context):
         body = json.loads(event.get("body") or "{}")
 
         user_id = body.get("userId", "demo-user")
+        filename = body.get("filename") or "recording.webm"
+        content_type = body.get("contentType")
 
         bucket = get_bucket_name()
-        key = build_audio_key(user_id)
+        extension = filename.split(".")[-1] if "." in filename else "webm"
+        key = build_audio_key(user_id, extension)
 
-        upload_url = generate_presigned_upload_url(bucket, key)
+        upload_url = generate_presigned_upload_url(bucket, key, content_type)
 
         return {
             "statusCode": 200,

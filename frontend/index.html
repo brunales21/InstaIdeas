@@ -14,7 +14,7 @@
     Record or upload an idea. We’ll structure it for you.
   </p>
   <p class="beta">
-    Private beta – audio must be .m4a
+    Private beta – record audio directly in the browser
   </p>
 
   <label>
@@ -22,10 +22,13 @@
     <input type="text" id="userId" placeholder="e.g. messi" />
   </label>
 
-  <div id="dropzone">
-    <p><strong>Drag & drop a .m4a file here</strong></p>
-    <p>or</p>
-    <input type="file" id="fileInput" accept=".m4a" />
+  <div class="recorder">
+    <div class="recorder-controls">
+      <button id="startRecordingBtn" type="button">Start recording</button>
+      <button id="stopRecordingBtn" type="button" disabled>Stop recording</button>
+    </div>
+    <p class="recorder-status" id="recorderStatus">Ready to record</p>
+    <audio id="recordedAudio" controls class="hidden"></audio>
   </div>
 
   <button id="sendBtn" disabled>Send audio</button>
