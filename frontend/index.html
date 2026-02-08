@@ -8,41 +8,55 @@
 </head>
 <body>
 
-  <h1>InstaIdeas</h1>
+  <div class="app">
 
-  <p class="subtitle">
-    Record or upload an idea. We’ll structure it for you.
-  </p>
-  <p class="beta">
-    Private beta – record audio directly in the browser
-  </p>
+    <header class="app-header">
+      <h1>InstaIdeas</h1>
+      <p class="tagline">Capture ideas before they disappear.</p>
+      <p class="subtagline">Speak for a few seconds. We’ll structure it for you.</p>
+    </header>
 
-  <label>
-    User ID
-    <input type="text" id="userId" placeholder="e.g. messi" />
-  </label>
+    <section class="user-section">
+      <label for="userId">User ID</label>
+      <input type="text" id="userId" placeholder="your name or alias" />
+    </section>
 
-  <div class="recorder">
-    <div class="recorder-controls">
-      <button id="startRecordingBtn" type="button">Start recording</button>
-      <button id="stopRecordingBtn" type="button" disabled>Stop recording</button>
+    <section class="recorder-card">
+      <h2>🎙️ Record your idea</h2>
+
+      <div class="recorder-controls">
+        <button id="startRecordingBtn" type="button" class="primary">
+          Start recording
+        </button>
+        <button id="stopRecordingBtn" type="button" disabled class="secondary">
+          Stop
+        </button>
+      </div>
+
+      <p class="recorder-status" id="recorderStatus">
+        Ready when you are
+      </p>
+
+      <audio id="recordedAudio" controls class="hidden"></audio>
+
+      <button id="sendBtn" disabled class="send-btn">
+        Send audio
+      </button>
+    </section>
+
+    <!-- STATUS OVERLAY -->
+    <div id="statusOverlay" class="hidden">
+      <div class="status-content">
+        <div class="spinner"></div>
+        <div id="statusText"></div>
+      </div>
     </div>
-    <p class="recorder-status" id="recorderStatus">Ready to record</p>
-    <audio id="recordedAudio" controls class="hidden"></audio>
+
+    <div id="output"></div>
+
   </div>
-
-  <button id="sendBtn" disabled>Send audio</button>
-
-  <!-- STATUS OVERLAY -->
-  <div id="statusOverlay" class="hidden">
-    <div class="status-content">
-      <div class="spinner"></div>
-      <div id="statusText"></div>
-    </div>
-  </div>
-
-  <div id="output"></div>
 
   <script src="app.js"></script>
 </body>
+
 </html>

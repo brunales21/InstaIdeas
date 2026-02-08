@@ -1,76 +1,101 @@
+/* RESET / BASE */
+
+* {
+  box-sizing: border-box;
+}
+
 body {
+  margin: 0;
   font-family: system-ui, -apple-system, sans-serif;
-  background: #f7f7f7;
-  padding: 40px;
-  max-width: 800px;
+  background: linear-gradient(180deg, #f4f7f6, #eef3f1);
+  color: #1f2933;
+}
+
+/* APP LAYOUT */
+
+.app {
+  max-width: 720px;
   margin: 0 auto;
-  color: #222;
+  padding: 48px 24px 80px;
 }
 
-h1 {
-  font-size: 32px;
-  margin-bottom: 8px;
+/* HEADER */
+
+.app-header {
+  margin-bottom: 40px;
 }
 
-.subtitle {
-  font-size: 16px;
-  margin-bottom: 4px;
+.app-header h1 {
+  font-size: 36px;
+  margin: 0 0 8px;
 }
 
-.beta {
-  font-size: 13px;
-  color: #777;
-  margin-bottom: 24px;
+.tagline {
+  font-size: 18px;
+  margin: 0;
 }
 
-label {
-  display: block;
-  margin-bottom: 20px;
-  font-weight: 500;
-}
-
-input[type="text"] {
+.subtagline {
+  font-size: 14px;
+  color: #6b7280;
   margin-top: 6px;
-  padding: 10px;
-  width: 100%;
-  max-width: 300px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
 }
 
-.recorder {
-  background: #fff;
-  border: 2px dashed #4caf50;
-  border-radius: 10px;
-  padding: 24px;
+/* USER */
+
+.user-section {
+  margin-bottom: 32px;
+}
+
+.user-section label {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.user-section input {
+  width: 100%;
+  max-width: 320px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  font-size: 15px;
+}
+
+/* RECORDER CARD */
+
+.recorder-card {
+  background: white;
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+  margin-bottom: 40px;
+}
+
+.recorder-card h2 {
+  margin-top: 0;
   margin-bottom: 20px;
 }
 
 .recorder-controls {
   display: flex;
-  flex-wrap: wrap;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
-.recorder-status {
-  margin: 0 0 12px;
-  color: #4b4b4b;
-  font-size: 14px;
-}
-
-audio {
-  width: 100%;
-}
+/* BUTTONS */
 
 button {
-  padding: 12px 24px;
-  font-size: 16px;
-  background: #4caf50;
-  color: white;
+  font-size: 15px;
+  border-radius: 999px;
+  padding: 12px 20px;
   border: none;
-  border-radius: 8px;
   cursor: pointer;
+  transition: transform 0.05s ease, opacity 0.2s;
+}
+
+button:active {
+  transform: scale(0.98);
 }
 
 button:disabled {
@@ -78,12 +103,43 @@ button:disabled {
   cursor: not-allowed;
 }
 
+.primary {
+  background: #16a34a;
+  color: white;
+}
+
+.secondary {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.send-btn {
+  width: 100%;
+  margin-top: 20px;
+  background: #22c55e;
+  color: white;
+  font-size: 16px;
+}
+
+/* RECORDER STATUS */
+
+.recorder-status {
+  font-size: 14px;
+  color: #4b5563;
+  margin-bottom: 12px;
+}
+
+audio {
+  width: 100%;
+  margin-top: 12px;
+}
+
 /* STATUS OVERLAY */
 
 #statusOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(247, 247, 247, 0.95);
+  background: rgba(244,247,246,0.96);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -96,83 +152,95 @@ button:disabled {
 
 .status-content {
   text-align: center;
-  max-width: 300px;
 }
 
 #statusText {
-  font-size: 20px;
-  font-weight: 500;
+  font-size: 22px;
   margin-top: 20px;
 }
 
+/* SPINNER */
+
 .spinner {
-  width: 48px;
-  height: 48px;
-  border: 4px solid #c8e6c9;
-  border-top: 4px solid #4caf50;
+  width: 52px;
+  height: 52px;
+  border: 4px solid #d1fae5;
+  border-top: 4px solid #22c55e;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto;
 }
 
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
 
 /* IDEA CARD */
 
 .idea-card {
-  margin-top: 40px;
-  background: #fff;
-  padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.08);
 }
 
 .idea-card h2 {
   margin-top: 0;
-  color: #2e7d32;
+  color: #166534;
+}
+
+.idea-card section {
+  margin-bottom: 20px;
+}
+
+.idea-card h3 {
+  font-size: 15px;
+  color: #374151;
+  margin-bottom: 6px;
 }
 
 .idea-card p {
-  line-height: 1.5;
+  margin: 0;
+  line-height: 1.6;
 }
 
 .idea-card ul {
-  margin-left: 20px;
+  padding-left: 18px;
+  margin: 6px 0 0;
 }
 
+/* FEEDBACK */
+
 .feedback {
-  margin-top: 20px;
-  display: flex;
-  gap: 12px;
+  margin-top: 24px;
+}
+
+.feedback textarea {
+  width: 100%;
+  border-radius: 8px;
+  padding: 10px;
+  border: 1px solid #d1d5db;
+  font-family: inherit;
 }
 
 .char-counter {
   text-align: right;
   font-size: 12px;
-  color: #777;
-  margin-bottom: 8px;
-}
-
-.feedback textarea {
-  width: 100%;
-  margin-bottom: 12px;
-  padding: 10px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  font-family: inherit;
+  color: #6b7280;
+  margin-top: 4px;
 }
 
 .feedback-actions {
   display: flex;
   gap: 12px;
+  margin-top: 12px;
+}
+
+.feedback-actions button {
+  flex: 1;
 }
 
 .feedback-error {
   margin-top: 8px;
   font-size: 14px;
-  color: #d32f2f;
 }
