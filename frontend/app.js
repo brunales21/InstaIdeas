@@ -210,7 +210,7 @@ async function sendFeedback(helped) {
   const errorEl = document.getElementById("feedbackError");
 
   errorEl.textContent = "";
-  errorEl.style.color = "#d32f2f";
+  errorEl.style.color = "#667eea";
 
   if (!window.currentIdeaId) {
     errorEl.textContent = "Idea ID missing. Please reload and try again.";
@@ -236,7 +236,7 @@ async function sendFeedback(helped) {
       })
     });
 
-    errorEl.style.color = "green";
+    errorEl.style.color = "#22c55e";
     errorEl.textContent = "Thanks for the feedback 🙌";
     commentEl.disabled = true;
 
