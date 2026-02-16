@@ -91,9 +91,11 @@ stopRecordingBtn.addEventListener("click", stopRecording);
 ------------------------------ */
 
 sendBtn.onclick = async () => {
-  const userId = document.getElementById("userId").value.trim();
-  if (!userId || !selectedFile) {
-    alert("User ID and audio are required");
+  const userInput = document.getElementById("userId").value.trim();
+  const userId = userInput || "default-user";
+  
+  if (!selectedFile) {
+    alert("Please record audio first");
     return;
   }
 

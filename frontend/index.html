@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>InstaIdeas</title>
   <link rel="icon" href="/favicon.ico" type="image/x-icon">
   <link rel="stylesheet" href="style.css" />
@@ -11,13 +12,16 @@
   <div class="app">
 
     <header class="app-header">
-      <h1>💡 InstaIdeas</h1>
+      <div class="header-title">
+        <span class="bulb">💡</span>
+        <h1>InstaIdeas</h1>
+      </div>
       <p class="tagline">Capture ideas before they disappear.</p>
-      <p class="subtagline">Speak for a few seconds. We’ll structure it for you.</p>
+      <p class="subtagline">Speak for a few seconds. We'll structure it for you.</p>
     </header>
 
     <section class="user-section">
-      <label for="userId">👤 Who are you?</label>
+      <label for="userId">👤 Tell us your name</label>
       <input type="text" id="userId" placeholder="Your name or alias" />
     </section>
 
@@ -53,6 +57,22 @@
     </div>
 
     <div id="output"></div>
+
+    <!-- SOCIAL LINKS -->
+    <footer class="social-footer">
+      <p class="footer-text">Built by Bruno Mercado</p>
+      <div class="social-links">
+        <a href="https://www.linkedin.com/in/bruno-mercado-sarsano-217425236/" target="_blank" rel="noopener noreferrer" class="social-link" title="LinkedIn">
+          <span>💼</span> LinkedIn
+        </a>
+        <a href="https://www.tiktok.com/@brunalescode?lang=es-419" target="_blank" rel="noopener noreferrer" class="social-link" title="TikTok">
+          <span>🎵</span> TikTok
+        </a>
+        <a href="https://x.com/brunalescode" target="_blank" rel="noopener noreferrer" class="social-link" title="Twitter/X">
+          <span>𝕏</span> X
+        </a>
+      </div>
+    </footer>
 
   </div>
 
