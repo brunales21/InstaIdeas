@@ -15,6 +15,7 @@ let mediaRecorder = null;
 let recordedChunks = [];
 let activeStream = null;
 window.currentIdeaId = null; // ✅ GLOBAL Y CORRECTO
+window.currentIdeaData = null;
 
 const MAX_FEEDBACK_CHARS = 280;
 
@@ -133,6 +134,8 @@ sendBtn.onclick = async () => {
     // ✅ GUARDAMOS BIEN EL ID
     window.currentIdeaId = result.idea.ideaId;
 
+    window.currentIdeaData = result.idea.idea_json;
+
     setStatus("✅ Idea ready", false);
     renderIdea(result.idea.idea_json);
 
@@ -176,10 +179,10 @@ function renderIdea(idea) {
       <div class="export-section">
         <h3>📤 Export</h3>
         <div class="export-buttons">
-          <button onclick="copyIdeaToClipboard()" class="export-btn copy-btn" title="Copy to clipboard">
+          <button id="copyIdeaBtn" class="export-btn copy-btn" title="Copy to clipboard" type="button">
             📋 Copy
           </button>
-          <button onclick="downloadIdeaPDF('${(idea.title || "Idea").replace(/'/g, "\\'")}.pdf')" class="export-btn pdf-btn" title="Download as PDF">
+          <button id="downloadPdfBtn" class="export-btn pdf-btn" title="Download as PDF" type="button">
             📄 Download PDF
           </button>
         </div>
@@ -203,6 +206,17 @@ function renderIdea(idea) {
       </div>
     </div>
   `;
+
+  const copyIdeaBtn = document.getElementById("copyIdeaBtn");
+  const downloadPdfBtn = document.getElementById("downloadPdfBtn");
+
+  if (copyIdeaBtn) {
+    copyIdeaBtn.addEventListener("click", copyIdeaToClipboard);
+  }
+
+  if (downloadPdfBtn) {
+    downloadPdfBtn.addEventListener("click", downloadIdeaPDF);
+  }
 
   output.scrollIntoView({ behavior: "smooth" });
 }
@@ -264,96 +278,200 @@ async function sendFeedback(helped) {
 ------------------------------ */
 
 function copyIdeaToClipboard() {
-  const ideaContent = document.getElementById("ideaContent");
-  if (!ideaContent) return;
+  if (!window.currentIdeaData) {
+    showExportNotification("No idea content available", false);
+    return;
+  }
 
-  const text = extractIdeaText(ideaContent);
-  
-  navigator.clipboard.writeText(text).then(() => {
-    showExportNotification("📋 Copied to clipboard!", true);
-  }).catch(err => {
-    console.error("Failed to copy:", err);
+  const text = formatIdeaAsText(window.currentIdeaData);
+
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(text)
+      .then(() => showExportNotification("📋 Copied to clipboard!", true))
+      .catch(() => fallbackCopyToClipboard(text));
+    return;
+  }
+
+  fallbackCopyToClipboard(text);
+}
+
+function fallbackCopyToClipboard(text) {
+  const temp = document.createElement("textarea");
+  temp.value = text;
+  temp.style.position = "fixed";
+  temp.style.opacity = "0";
+  document.body.appendChild(temp);
+  temp.select();
+
+  try {
+    const copied = document.execCommand("copy");
+    showExportNotification(copied ? "📋 Copied to clipboard!" : "Failed to copy", copied);
+  } catch {
     showExportNotification("Failed to copy", false);
-  });
+  } finally {
+    document.body.removeChild(temp);
+  }
 }
 
-function extractIdeaText(ideaElement) {
-  let text = "";
-  const h2 = ideaElement.querySelector("h2");
-  if (h2) text += h2.textContent + "\n\n";
-
-  const sections = ideaElement.querySelectorAll("section");
-  sections.forEach(section => {
-    const h3 = section.querySelector("h3");
-    if (h3) text += h3.textContent + ":\n";
-    
-    const p = section.querySelector("p");
-    const ul = section.querySelector("ul");
-    
-    if (p) {
-      text += p.textContent + "\n";
-    } else if (ul) {
-      const items = ul.querySelectorAll("li");
-      items.forEach(item => {
-        text += "• " + item.textContent + "\n";
-      });
+function formatIdeaAsText(idea) {
+  const lines = [];
+  const pushValue = (label, value) => {
+    lines.push(`${label}:`);
+    if (Array.isArray(value)) {
+      if (value.length) {
+        value.forEach(item => lines.push(`• ${item}`));
+      } else {
+        lines.push("—");
+      }
+    } else {
+      lines.push(value || "—");
     }
-    text += "\n";
-  });
+    lines.push("");
+  };
 
-  return text;
+  lines.push(idea.title || "Untitled idea", "");
+  pushValue("Possible names", idea.possible_names);
+  pushValue("Description", idea.description);
+  pushValue("Problem", idea.problem);
+  pushValue("Solution", idea.solution);
+  pushValue("Suggested improvement", idea.suggested_improvement);
+  pushValue("Potential impact", idea.potential_impact);
+  pushValue("Target audience", idea.target_audience);
+  pushValue("Usage scenarios", idea.usage_scenarios);
+  pushValue("Extra opportunity", idea.extra_opportunity);
+  pushValue("Extra context", idea.extra_context);
+
+  return lines.join("\n").trim();
 }
 
-function downloadIdeaPDF(filename) {
-  const ideaContent = document.getElementById("ideaContent");
-  if (!ideaContent) return;
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 
-  // Create a temporary container to hold the clone
+function sanitizeFileName(name) {
+  return name
+    .replace(/[\\/:*?"<>|]/g, "")
+    .replace(/\s+/g, "-")
+    .slice(0, 80) || "idea";
+}
+
+function renderSectionForPdf(title, value) {
+  if (Array.isArray(value)) {
+    const items = value.length
+      ? `<ul>${value.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
+      : "<p>—</p>";
+    return `<section><h3>${title}</h3>${items}</section>`;
+  }
+
+  return `<section><h3>${title}</h3><p>${escapeHtml(value || "—")}</p></section>`;
+}
+
+function loadExternalScript(src) {
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[data-src="${src}"]`);
+    if (existing) {
+      if (existing.dataset.loaded === "true") {
+        resolve();
+        return;
+      }
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener("error", () => reject(new Error(`Failed to load ${src}`)), { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = true;
+    script.dataset.src = src;
+    script.addEventListener("load", () => {
+      script.dataset.loaded = "true";
+      resolve();
+    }, { once: true });
+    script.addEventListener("error", () => reject(new Error(`Failed to load ${src}`)), { once: true });
+    document.head.appendChild(script);
+  });
+}
+
+async function ensurePdfEngineLoaded() {
+  if (typeof window.html2pdf !== "undefined") {
+    return true;
+  }
+
+  const sources = [
+    "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js",
+    "https://unpkg.com/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"
+  ];
+
+  for (const src of sources) {
+    try {
+      await loadExternalScript(src);
+      if (typeof window.html2pdf !== "undefined") {
+        return true;
+      }
+    } catch {
+      // try next source
+    }
+  }
+
+  return false;
+}
+
+async function downloadIdeaPDF() {
+  if (!window.currentIdeaData) {
+    showExportNotification("No idea content available", false);
+    return;
+  }
+
+  const hasPdfEngine = await ensurePdfEngineLoaded();
+  if (!hasPdfEngine) {
+    showExportNotification("PDF engine unavailable", false);
+    return;
+  }
+
+  const idea = window.currentIdeaData;
+  const filename = `${sanitizeFileName(idea.title || "idea")}.pdf`;
+
   const tempContainer = document.createElement("div");
   tempContainer.style.position = "fixed";
   tempContainer.style.left = "-9999px";
   tempContainer.style.top = "-9999px";
   tempContainer.style.width = "210mm";
-  tempContainer.style.zIndex = "-1";
-  
-  // Clone the element
-  const clone = ideaContent.cloneNode(true);
-  
-  // Remove export and feedback sections from PDF
-  const exportSection = clone.querySelector(".export-section");
-  const feedbackSection = clone.querySelector(".feedback");
-  if (exportSection) exportSection.remove();
-  if (feedbackSection) feedbackSection.remove();
-  
-  // Add to temporary container
-  tempContainer.appendChild(clone);
+  tempContainer.innerHTML = `
+    <article style="font-family: Arial, sans-serif; color: #111; line-height: 1.5; padding: 8mm;">
+      <h1 style="font-size: 24px; margin-bottom: 18px;">${escapeHtml(idea.title || "Untitled idea")}</h1>
+      ${renderSectionForPdf("Possible names", idea.possible_names)}
+      ${renderSectionForPdf("Description", idea.description)}
+      ${renderSectionForPdf("Problem", idea.problem)}
+      ${renderSectionForPdf("Solution", idea.solution)}
+      ${renderSectionForPdf("Suggested improvement", idea.suggested_improvement)}
+      ${renderSectionForPdf("Potential impact", idea.potential_impact)}
+      ${renderSectionForPdf("Target audience", idea.target_audience)}
+      ${renderSectionForPdf("Usage scenarios", idea.usage_scenarios)}
+      ${renderSectionForPdf("Extra opportunity", idea.extra_opportunity)}
+      ${renderSectionForPdf("Extra context", idea.extra_context)}
+    </article>
+  `;
+
   document.body.appendChild(tempContainer);
 
-  // Generate PDF with a slight delay to ensure rendering
-  setTimeout(() => {
-    const opt = {
-      margin: [15, 15, 15, 15],
-      filename: filename || "idea.pdf",
+  window.html2pdf()
+    .set({
+      margin: [12, 12, 12, 12],
+      filename,
       image: { type: "jpeg", quality: 0.98 },
       html2canvas: { scale: 2, useCORS: true, logging: false },
       jsPDF: { orientation: "portrait", unit: "mm", format: "a4" }
-    };
-
-    html2pdf()
-      .set(opt)
-      .from(tempContainer)
-      .save()
-      .then(() => {
-        // Clean up
-        document.body.removeChild(tempContainer);
-        showExportNotification("📄 PDF ready!", true);
-      })
-      .catch(err => {
-        document.body.removeChild(tempContainer);
-        showExportNotification("Failed to generate PDF", false);
-        console.error("PDF generation error:", err);
-      });
-  }, 100);
+    })
+    .from(tempContainer)
+    .save()
+    .then(() => showExportNotification("📄 PDF downloaded!", true))
+    .catch(() => showExportNotification("Failed to generate PDF", false))
+    .finally(() => document.body.removeChild(tempContainer));
 }
 
 function showExportNotification(message, isSuccess) {
