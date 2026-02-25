@@ -371,13 +371,64 @@ function renderSectionForPdf(title, value) {
   return `<section><h3>${title}</h3><p>${escapeHtml(value || "—")}</p></section>`;
 }
 
-function downloadIdeaPDF() {
+function loadExternalScript(src) {
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[data-src="${src}"]`);
+    if (existing) {
+      if (existing.dataset.loaded === "true") {
+        resolve();
+        return;
+      }
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener("error", () => reject(new Error(`Failed to load ${src}`)), { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = true;
+    script.dataset.src = src;
+    script.addEventListener("load", () => {
+      script.dataset.loaded = "true";
+      resolve();
+    }, { once: true });
+    script.addEventListener("error", () => reject(new Error(`Failed to load ${src}`)), { once: true });
+    document.head.appendChild(script);
+  });
+}
+
+async function ensurePdfEngineLoaded() {
+  if (typeof window.html2pdf !== "undefined") {
+    return true;
+  }
+
+  const sources = [
+    "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js",
+    "https://unpkg.com/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"
+  ];
+
+  for (const src of sources) {
+    try {
+      await loadExternalScript(src);
+      if (typeof window.html2pdf !== "undefined") {
+        return true;
+      }
+    } catch {
+      // try next source
+    }
+  }
+
+  return false;
+}
+
+async function downloadIdeaPDF() {
   if (!window.currentIdeaData) {
     showExportNotification("No idea content available", false);
     return;
   }
 
-  if (typeof html2pdf === "undefined") {
+  const hasPdfEngine = await ensurePdfEngineLoaded();
+  if (!hasPdfEngine) {
     showExportNotification("PDF engine unavailable", false);
     return;
   }
@@ -408,7 +459,7 @@ function downloadIdeaPDF() {
 
   document.body.appendChild(tempContainer);
 
-  html2pdf()
+  window.html2pdf()
     .set({
       margin: [12, 12, 12, 12],
       filename,
