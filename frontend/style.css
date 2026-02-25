@@ -301,7 +301,92 @@ button:disabled {
   margin-bottom: 0;
   padding-bottom: 0;
 }
+.export-section {
+  margin: 32px 0 32px 0;
+  padding: 28px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%);
+  border: 1.5px solid #f0eff5;
+  border-radius: 16px;
+}
 
+.export-section h3 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #667eea;
+  margin: 0 0 16px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.export-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.export-btn {
+  flex: 1;
+  min-width: 140px;
+  padding: 14px 18px;
+  background: white;
+  color: #667eea;
+  border: 1.5px solid #e8e8f0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: -0.3px;
+}
+
+.export-btn:hover:not(:disabled) {
+  background: #fafbfd;
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+  transform: translateY(-2px);
+}
+
+.export-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.export-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.export-notification {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  padding: 16px 24px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #667eea;
+  z-index: 1000;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+
+.export-notification.success {
+  border-left: 4px solid #22c55e;
+  color: #22c55e;
+}
+
+.export-notification.error {
+  border-left: 4px solid #ef4444;
+  color: #ef4444;
+}
+
+.export-notification.show {
+  opacity: 1;
+  transform: translateY(0);
+}
 .idea-card h3 {
   font-size: 0.9rem;
   font-weight: 700;
@@ -474,6 +559,22 @@ button:disabled {
 
 /* MOBILE: 480px and below */
 @media (max-width: 480px) {
+  .export-section {
+    margin: 24px 0 24px 0;
+    padding: 20px;
+  }
+
+  .export-buttons {
+    gap: 10px;
+    flex-direction: column;
+  }
+
+  .export-btn {
+    width: 100%;
+    min-width: auto;
+    padding: 12px 16px;
+    font-size: 0.9rem;
+  }
   .app {
     padding: 0 16px 50px 16px;
   }
@@ -618,6 +719,25 @@ button:disabled {
 @media (max-width: 375px) {
   .app {
     padding: 0 12px 40px 12px;
+  }
+
+  .export-notification {
+    bottom: 20px;
+    right: 12px;
+    left: 12px;
+    padding: 14px 16px;
+    font-size: 0.85rem;
+    border-radius: 10px;
+  }
+
+  .export-section {
+    margin: 20px 0 20px 0;
+    padding: 16px;
+  }
+
+  .export-btn {
+    padding: 11px 14px;
+    font-size: 0.85rem;
   }
 
   h1 {

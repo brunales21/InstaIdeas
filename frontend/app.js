@@ -138,7 +138,7 @@ sendBtn.onclick = async () => {
 
   } catch (err) {
     console.error(err);
-    setStatus("❌ We couldn’t process this audio.\nTry another .m4a file.");
+    setStatus("❌ We couldn't process this audio.\nTry another .m4a file.");
     setTimeout(() => setStatus("", false), 2500);
   }
 };
@@ -159,7 +159,7 @@ function renderIdea(idea) {
       : `<p class="muted">—</p>`;
 
   output.innerHTML = `
-    <div class="idea-card">
+    <div class="idea-card" id="ideaContent">
       <h2>${idea.title || "Untitled idea"}</h2>
 
       <section><h3>Possible names</h3>${list(idea.possible_names)}</section>
@@ -173,6 +173,18 @@ function renderIdea(idea) {
       <section><h3>Extra opportunity</h3><p>${idea.extra_opportunity || "—"}</p></section>
       <section><h3>Extra context</h3><p>${idea.extra_context || "—"}</p></section>
 
+      <div class="export-section">
+        <h3>EXPORT IDEA</h3>
+        <div class="export-buttons">
+          <button onclick="copyIdeaToClipboard()" class="export-btn copy-btn" title="Copy idea to clipboard">
+            📋 Copy
+          </button>
+          <button onclick="downloadIdeaPDF('${(idea.title || "Idea").replace(/'/g, "\\'")}.pdf')" class="export-btn pdf-btn" title="Download as PDF">
+            📄 Download PDF
+          </button>
+        </div>
+      </div>
+
       <div class="feedback">
         <textarea
           id="feedbackComment"
@@ -184,7 +196,7 @@ function renderIdea(idea) {
 
         <div class="feedback-actions">
           <button onclick="sendFeedback(true)">👍 This helped</button>
-          <button onclick="sendFeedback(false)">👎 Didn’t help</button>
+          <button onclick="sendFeedback(false)">👎 Didn't help</button>
         </div>
 
         <p id="feedbackError" class="feedback-error"></p>
@@ -245,4 +257,89 @@ async function sendFeedback(helped) {
   } catch {
     errorEl.textContent = "Error sending feedback";
   }
+}
+
+/* -----------------------------
+   Export features
+------------------------------ */
+
+function copyIdeaToClipboard() {
+  const ideaContent = document.getElementById("ideaContent");
+  if (!ideaContent) return;
+
+  const text = extractIdeaText(ideaContent);
+  
+  navigator.clipboard.writeText(text).then(() => {
+    showExportNotification("📋 Copied to clipboard!", true);
+  }).catch(err => {
+    console.error("Failed to copy:", err);
+    showExportNotification("Failed to copy", false);
+  });
+}
+
+function extractIdeaText(ideaElement) {
+  let text = "";
+  const h2 = ideaElement.querySelector("h2");
+  if (h2) text += h2.textContent + "\n\n";
+
+  const sections = ideaElement.querySelectorAll("section");
+  sections.forEach(section => {
+    const h3 = section.querySelector("h3");
+    if (h3) text += h3.textContent + ":\n";
+    
+    const p = section.querySelector("p");
+    const ul = section.querySelector("ul");
+    
+    if (p) {
+      text += p.textContent + "\n";
+    } else if (ul) {
+      const items = ul.querySelectorAll("li");
+      items.forEach(item => {
+        text += "• " + item.textContent + "\n";
+      });
+    }
+    text += "\n";
+  });
+
+  return text;
+}
+
+function downloadIdeaPDF(filename) {
+  const ideaContent = document.getElementById("ideaContent");
+  if (!ideaContent) return;
+
+  const opt = {
+    margin: 15,
+    filename: filename || "idea.pdf",
+    image: { type: "jpeg", quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { orientation: "portrait", unit: "mm", format: "a4" }
+  };
+
+  // Clone the element to avoid modifying the original
+  const clone = ideaContent.cloneNode(true);
+  // Remove export and feedback sections from PDF
+  const exportSection = clone.querySelector(".export-section");
+  const feedbackSection = clone.querySelector(".feedback");
+  if (exportSection) exportSection.remove();
+  if (feedbackSection) feedbackSection.remove();
+
+  html2pdf().set(opt).from(clone).save();
+  showExportNotification("📄 Downloading PDF...", true);
+}
+
+function showExportNotification(message, isSuccess) {
+  const notification = document.createElement("div");
+  notification.className = "export-notification" + (isSuccess ? " success" : " error");
+  notification.textContent = message;
+  document.body.appendChild(notification);
+
+  setTimeout(() => {
+    notification.classList.add("show");
+  }, 10);
+
+  setTimeout(() => {
+    notification.classList.remove("show");
+    setTimeout(() => notification.remove(), 300);
+  }, 3000);
 }
