@@ -184,7 +184,9 @@ function renderIdea(idea) {
           </button>
         </div>
       </div>
+    </div>
 
+    <div class="feedback-card">
       <div class="feedback">
         <textarea
           id="feedbackComment"

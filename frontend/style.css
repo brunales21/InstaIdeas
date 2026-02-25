@@ -420,10 +420,19 @@ button:disabled {
   word-wrap: break-word;
 }
 
+.feedback-card {
+  background: #f8f7fc;
+  padding: 48px 48px;
+  margin: 24px 0 32px 0;
+  border-radius: 20px;
+  width: 100%;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
 .feedback {
-  margin-top: 32px;
-  padding-top: 32px;
-  border-top: 1px solid #f0eff5;
+  margin: 0;
+  padding: 0;
+  border-top: none;
 }
 
 .feedback textarea {
@@ -558,6 +567,11 @@ button:disabled {
     margin-bottom: 24px;
     padding-bottom: 24px;
   }
+
+  .feedback-card {
+    padding: 36px 32px;
+    margin: 20px 0 28px 0;
+  }
 }
 
 /* MOBILE: 480px and below */
@@ -591,6 +605,12 @@ button:disabled {
     padding: 12px 16px;
     font-size: 0.8rem;
     border-radius: 8px;
+  }
+
+  .feedback-card {
+    padding: 24px 20px;
+    margin: 16px 0 24px 0;
+    border-radius: 16px;
   }
   .app {
     padding: 0 16px 50px 16px;
@@ -754,6 +774,11 @@ button:disabled {
   .export-btn {
     padding: 10px 12px;
     font-size: 0.8rem;
+  }
+
+  .feedback-card {
+    padding: 20px 16px;
+    margin: 14px 0 20px 0;
   }
 
   h1 {
