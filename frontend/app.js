@@ -308,52 +308,91 @@ function downloadIdeaPDF(filename) {
   const ideaContent = document.getElementById("ideaContent");
   if (!ideaContent) return;
 
-  // Create a temporary container to hold the clone
-  const tempContainer = document.createElement("div");
-  tempContainer.style.position = "fixed";
-  tempContainer.style.left = "-9999px";
-  tempContainer.style.top = "-9999px";
-  tempContainer.style.width = "210mm";
-  tempContainer.style.zIndex = "-1";
-  
-  // Clone the element
+  showExportNotification("📄 Generando PDF...", true);
+
+  // Clone el elemento y remueve secciones innecesarias
   const clone = ideaContent.cloneNode(true);
-  
-  // Remove export and feedback sections from PDF
   const exportSection = clone.querySelector(".export-section");
   const feedbackSection = clone.querySelector(".feedback");
   if (exportSection) exportSection.remove();
   if (feedbackSection) feedbackSection.remove();
+
+  // Crea un wrapper con estilos apropiados para captura
+  const wrapper = document.createElement("div");
+  wrapper.style.width = "900px";
+  wrapper.style.padding = "40px 50px";
+  wrapper.style.margin = "0";
+  wrapper.style.background = "white";
+  wrapper.style.fontFamily = "'Segoe UI', Roboto, sans-serif";
+  wrapper.style.lineHeight = "1.6";
+  wrapper.appendChild(clone);
   
-  // Add to temporary container
-  tempContainer.appendChild(clone);
-  document.body.appendChild(tempContainer);
+  // Oculta el wrapper pero mantiene en el DOM para captura
+  wrapper.style.position = "fixed";
+  wrapper.style.left = "-9999px";
+  wrapper.style.top = "-9999px";
+  wrapper.style.zIndex = "-9999";
+  document.body.appendChild(wrapper);
 
-  // Generate PDF with a slight delay to ensure rendering
+  // Espera un momento para que se renderice
   setTimeout(() => {
-    const opt = {
-      margin: [15, 15, 15, 15],
-      filename: filename || "idea.pdf",
-      image: { type: "jpeg", quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, logging: false },
-      jsPDF: { orientation: "portrait", unit: "mm", format: "a4" }
-    };
-
-    html2pdf()
-      .set(opt)
-      .from(tempContainer)
-      .save()
-      .then(() => {
-        // Clean up
-        document.body.removeChild(tempContainer);
-        showExportNotification("📄 PDF ready!", true);
-      })
-      .catch(err => {
-        document.body.removeChild(tempContainer);
-        showExportNotification("Failed to generate PDF", false);
-        console.error("PDF generation error:", err);
+    html2canvas(wrapper, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      logging: false,
+      backgroundColor: "#ffffff",
+      windowHeight: wrapper.scrollHeight,
+      windowWidth: 900
+    })
+    .then(canvas => {
+      const imgData = canvas.toDataURL("image/jpeg", 0.95);
+      
+      // Accede a jsPDF desde window.jspdf
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4"
       });
-  }, 100);
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      
+      // Calcula dimensiones de la imagen
+      const imgWidth = pageWidth - 20; // 10mm margen en cada lado
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      let heightLeft = imgHeight;
+      let position = 10; // Comienza 10mm desde arriba
+      
+      // Agrega primera página
+      pdf.addImage(imgData, "JPEG", 10, position, imgWidth, imgHeight);
+      heightLeft -= (pageHeight - 20); // Resta altura de página menos márgenes
+      
+      // Agrega páginas adicionales si es necesario
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "JPEG", 10, position, imgWidth, imgHeight);
+        heightLeft -= (pageHeight - 20);
+      }
+      
+      // Descarga el PDF
+      pdf.save(filename || "idea.pdf");
+      
+      // Remueve el wrapper del DOM
+      document.body.removeChild(wrapper);
+      showExportNotification("📄 ¡PDF listo!", true);
+    })
+    .catch(err => {
+      console.error("Error generando PDF:", err);
+      if (document.body.contains(wrapper)) {
+        document.body.removeChild(wrapper);
+      }
+      showExportNotification("Error al generar PDF", false);
+    });
+  }, 200);
 }
 
 function showExportNotification(message, isSuccess) {
