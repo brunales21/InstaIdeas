@@ -174,9 +174,9 @@ function renderIdea(idea) {
       <section><h3>Extra context</h3><p>${idea.extra_context || "—"}</p></section>
 
       <div class="export-section">
-        <h3>EXPORT IDEA</h3>
+        <h3>📤 Export</h3>
         <div class="export-buttons">
-          <button onclick="copyIdeaToClipboard()" class="export-btn copy-btn" title="Copy idea to clipboard">
+          <button onclick="copyIdeaToClipboard()" class="export-btn copy-btn" title="Copy to clipboard">
             📋 Copy
           </button>
           <button onclick="downloadIdeaPDF('${(idea.title || "Idea").replace(/'/g, "\\'")}.pdf')" class="export-btn pdf-btn" title="Download as PDF">
@@ -308,24 +308,52 @@ function downloadIdeaPDF(filename) {
   const ideaContent = document.getElementById("ideaContent");
   if (!ideaContent) return;
 
-  const opt = {
-    margin: 15,
-    filename: filename || "idea.pdf",
-    image: { type: "jpeg", quality: 0.98 },
-    html2canvas: { scale: 2 },
-    jsPDF: { orientation: "portrait", unit: "mm", format: "a4" }
-  };
-
-  // Clone the element to avoid modifying the original
+  // Create a temporary container to hold the clone
+  const tempContainer = document.createElement("div");
+  tempContainer.style.position = "fixed";
+  tempContainer.style.left = "-9999px";
+  tempContainer.style.top = "-9999px";
+  tempContainer.style.width = "210mm";
+  tempContainer.style.zIndex = "-1";
+  
+  // Clone the element
   const clone = ideaContent.cloneNode(true);
+  
   // Remove export and feedback sections from PDF
   const exportSection = clone.querySelector(".export-section");
   const feedbackSection = clone.querySelector(".feedback");
   if (exportSection) exportSection.remove();
   if (feedbackSection) feedbackSection.remove();
+  
+  // Add to temporary container
+  tempContainer.appendChild(clone);
+  document.body.appendChild(tempContainer);
 
-  html2pdf().set(opt).from(clone).save();
-  showExportNotification("📄 Downloading PDF...", true);
+  // Generate PDF with a slight delay to ensure rendering
+  setTimeout(() => {
+    const opt = {
+      margin: [15, 15, 15, 15],
+      filename: filename || "idea.pdf",
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, logging: false },
+      jsPDF: { orientation: "portrait", unit: "mm", format: "a4" }
+    };
+
+    html2pdf()
+      .set(opt)
+      .from(tempContainer)
+      .save()
+      .then(() => {
+        // Clean up
+        document.body.removeChild(tempContainer);
+        showExportNotification("📄 PDF ready!", true);
+      })
+      .catch(err => {
+        document.body.removeChild(tempContainer);
+        showExportNotification("Failed to generate PDF", false);
+        console.error("PDF generation error:", err);
+      });
+  }, 100);
 }
 
 function showExportNotification(message, isSuccess) {
