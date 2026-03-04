@@ -1,59 +1,54 @@
-🚀 InstaIdeas
+# 🚀 InstaIdeas
 
-Capture ideas before they disappear.
+**Capture ideas before they disappear.**
 
-InstaIdeas is a serverless web app that transforms short voice notes into structured ideas using AI.
-Users record audio, the system processes it, stores the structured output, and optionally sends it by email.
+InstaIdeas is a serverless web application that transforms short voice notes into structured ideas using AI.
 
-🏗 Architecture
+Record a few seconds of audio.  
+We process it, structure it, store it, and optionally send it to your email.
 
-Frontend
+---
 
-Static site (HTML, CSS, JS)
+## 🏗 Architecture
 
-Hosted on S3
+### Frontend
+- Static site (HTML, CSS, JS)
+- Hosted on Amazon S3
+- Distributed via CloudFront
+- Custom domain
 
-Distributed via CloudFront
+### Backend (AWS Lambda)
+- `get_upload_url` → Generate pre-signed S3 upload URL
+- `process_audio` → Transcription + AI structuring
+- `get_idea` → Retrieve idea from DynamoDB
+- `send_idea_email` → Send idea via Amazon SES
+- `feedback` → Store user feedback
 
-Custom domain
+---
 
-Backend (AWS Lambda)
+## 🔁 Flow
 
-get_upload_url → Pre-signed S3 upload
+1. User records audio  
+2. Audio is uploaded to S3  
+3. The system processes and structures the idea  
+4. Structured output is stored in DynamoDB  
+5. User can view or receive the result by email  
 
-process_audio → Transcription + AI structuring
+---
 
-get_idea → Fetch idea from DynamoDB
+## ⚙ CI/CD
 
-send_idea_email → Email via Amazon SES
+GitHub Actions automatically deploys updated Lambda functions on push to `main`.
 
-feedback → Store user feedback
+---
 
-AWS Services
-Lambda · S3 · DynamoDB · SES · API Gateway · CloudFront · IAM
+## 🧠 Focus
 
-🔁 Flow
+- Voice-first idea capture  
+- Serverless architecture  
+- Lean MVP iteration  
+- Transactional email delivery  
 
-User records audio
+---
 
-Audio uploaded to S3
-
-Lambda processes and structures idea
-
-Idea stored in DynamoDB
-
-User can view or email result
-
-⚙ CI/CD
-
-GitHub Actions deploys only modified Lambdas automatically on push to main.
-
-🧠 Focus
-
-Voice-first capture
-
-Serverless architecture
-
-Lean MVP iteration
-
-Transactional email only (SES)
+Built as an experiment in fast product validation using AWS serverless infrastructure.
