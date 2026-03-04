@@ -29,6 +29,8 @@ jobs:
               - 'lambda/get_idea/**'
             feedback:
               - 'lambda/feedback/**'
+            send_idea_email:
+              - 'lambda/send_idea_email/**'
 
       # -------------------------------------------
       # Python
@@ -75,12 +77,21 @@ jobs:
           zip -r function.zip lambda_function.py
 
       # -------------------------------------------
-      # FeedbackLambda (NUEVA)
+      # FeedbackLambda
       # -------------------------------------------
       - name: Build ZIP (feedback)
         if: steps.changes.outputs.feedback == 'true'
         run: |
           cd lambda/feedback
+          zip -r function.zip lambda_function.py
+
+      # -------------------------------------------
+      # SendIdeaEmailLambda (NUEVA)
+      # -------------------------------------------
+      - name: Build ZIP (send_idea_email)
+        if: steps.changes.outputs.send_idea_email == 'true'
+        run: |
+          cd lambda/send_idea_email
           zip -r function.zip lambda_function.py
 
       # -------------------------------------------
@@ -123,3 +134,10 @@ jobs:
           aws lambda update-function-code \
             --function-name SaveFeedbackLambda-dev \
             --zip-file fileb://lambda/feedback/function.zip
+
+      - name: Deploy SendIdeaEmailLambda
+        if: steps.changes.outputs.send_idea_email == 'true'
+        run: |
+          aws lambda update-function-code \
+            --function-name SendIdeaEmailLambda-dev \
+            --zip-file fileb://lambda/send_idea_email/function.zip
