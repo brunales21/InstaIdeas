@@ -68,17 +68,28 @@ def generate_structured_json(transcript: str) -> dict:
     prompt = prompt_template.replace("{texto_transcrito}", transcript)
 
     completion = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}],
-        max_tokens=350
+        model="gpt-4.1-mini",
+        response_format={"type": "json_object"},
+        messages=[
+            {"role": "system", "content": "You must output valid JSON only."},
+            {"role": "user", "content": prompt}
+        ],
+        max_tokens=1200
     )
 
     raw = completion.choices[0].message.content.strip()
 
     try:
         return json.loads(raw)
-    except Exception:
-        return {"error": "JSON inválido", "raw": raw}
+
+    except json.JSONDecodeError as e:
+        print("JSON decode error:", e)
+        print("RAW RESPONSE:", raw)
+
+        return {
+            "error": "JSON inválido",
+            "raw": raw
+        }
 
 
 def save_idea_to_dynamodb(user_id, audio_key, transcript, idea_json):
